@@ -1,10 +1,6 @@
-# createAccount.py
+
 import customtkinter as ctk
 import json
-
-
-
-
 def open_create_account():
     try:
         with open("accounts.json", "r") as f:
@@ -48,3 +44,4 @@ def open_create_account():
 
     create_btn = ctk.CTkButton(window, text="Create Account", command=create_account_logic)
     create_btn.pack(pady=10)
+
