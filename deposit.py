@@ -1,8 +1,5 @@
 import customtkinter as ctk
 import json
-
-
-
 def deposit_gui():
     window = ctk.CTkToplevel()
     window.geometry("400x300")
@@ -40,5 +37,3 @@ def deposit_gui():
             feedback_label.configure(text="Account does not exist!")
     deposit_money_btn = ctk.CTkButton(window, text="Deposit money", command=deposit_money)
     deposit_money_btn.pack(pady=10)
-
-
