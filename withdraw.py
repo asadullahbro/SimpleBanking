@@ -1,8 +1,5 @@
 import customtkinter as ctk
 import json
-
-
-
 def withdraw_gui():
     try:
         with open("accounts.json", "r") as file:
