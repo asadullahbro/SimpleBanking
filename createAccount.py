@@ -1,13 +1,12 @@
-
 import customtkinter as ctk
 import json
+
 def open_create_account():
     try:
         with open("accounts.json", "r") as f:
             accounts = json.load(f)
     except FileNotFoundError:
         accounts = {}
-    # New window (modal/tab)
     window = ctk.CTkToplevel()
     window.geometry("400x300")
     window.title("Create Account")
@@ -44,4 +43,5 @@ def open_create_account():
 
     create_btn = ctk.CTkButton(window, text="Create Account", command=create_account_logic)
     create_btn.pack(pady=10)
+
 
