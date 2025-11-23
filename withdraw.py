@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import json
+
 def withdraw_gui():
     try:
         with open("accounts.json", "r") as file:
@@ -40,3 +41,4 @@ def withdraw_gui():
         balance_entry.delete(0, "end")
     withdraw_money_btn = ctk.CTkButton(window, text="Withdraw", command=withdraw_money)
     withdraw_money_btn.pack(pady=10)
+
