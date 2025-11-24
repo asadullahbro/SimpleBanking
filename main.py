@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from createAccount import open_create_account  # import the function
+from createAccount import open_create_account
 from check_balance import check_balance
 from deposit import deposit_gui
 from withdraw import withdraw_gui
@@ -21,5 +21,6 @@ deposit_money_btn.grid(row=2, column=0, pady=10)
 
 withdraw_money_btn = ctk.CTkButton(frame, text="Withdraw money", command=withdraw_gui)
 withdraw_money_btn.grid(row=3, column=0, pady=10)
+
 
 app.mainloop()
