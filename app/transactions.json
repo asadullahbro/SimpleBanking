@@ -1,0 +1,49 @@
+[
+  {
+    "user_id": "Muhammad",
+    "type": "deposit",
+    "amount": 12.0,
+    "description": "Deposit: $12.00",
+    "balance_after": 12.0,
+    "id": "tx_20251130204655_6a37d0d1",
+    "timestamp": "2025-11-30T20:46:55.500809"
+  },
+  {
+    "user_id": "Muhammad",
+    "type": "withdrawal",
+    "amount": 12.0,
+    "description": "Withdrawal: $12.00",
+    "balance_after": 0.0,
+    "id": "tx_20251130210644_eafed633",
+    "timestamp": "2025-11-30T21:06:44.896234"
+  },
+  {
+    "user_id": "asadullah",
+    "type": "deposit",
+    "amount": 12.0,
+    "description": "Deposit: $12.00",
+    "balance_after": 12.0,
+    "id": "tx_20251130210644_6798856c",
+    "timestamp": "2025-11-30T21:06:44.957776"
+  },
+  {
+    "user_id": "Muhammad",
+    "type": "transfer_sent",
+    "amount": 12.0,
+    "description": "Transfer to D587-C581-F011-FA05",
+    "to_account": "D587-C581-F011-FA05",
+    "balance_after": 0.0,
+    "id": "tx_20251130210644_9ba5fcd0",
+    "timestamp": "2025-11-30T21:06:44.980628"
+  },
+  {
+    "user_id": "asadullah",
+    "type": "transfer_received",
+    "amount": 12.0,
+    "description": "Transfer from C34D-39BD-4366-1138",
+    "from_account": "C34D-39BD-4366-1138",
+    "balance_after": 12.0,
+    "id": "tx_20251130210644_ce6825c5",
+    "timestamp": "2025-11-30T21:06:44.996193"
+  }
+]

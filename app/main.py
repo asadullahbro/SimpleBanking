@@ -9,6 +9,10 @@ import json
 from datetime import datetime, timedelta
 import uuid
 import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
 
 SECRET_KEY = "if_you_use_a_real_secret_key_your_app_will_be_more_secure"
 ALGORITHM = "HS256"
@@ -18,6 +22,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
+templates = Jinja2Templates(directory="../templates")
+app.mount("/static", StaticFiles(directory="../static"), name="static")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -200,8 +206,7 @@ def make_account_number(username: str) -> str:
     raw_number = hex_dig[:16].upper()
     account_number = '-'.join(raw_number[i:i+4] for i in range(0, 16, 4))
     return account_number
-
-@app.post('/signup')
+@app.post("/signup")
 def signup(username: str = Form(...), password: str = Form(...)):
     users = load_users()
     if username in users:
@@ -300,3 +305,31 @@ async def get_all_users(current_user: dict = Depends(get_current_user)):
 def get_transactions(current_user: dict = Depends(get_current_user)):
     transactions = get_user_transactions(current_user["username"])
     return {"transactions": transactions}
+@app.get("/users/{account_number}")
+async def get_user_by_account_number(account_number: str, current_user: dict = Depends(get_current_user)):
+    users = load_users()
+    normalized_target = account_number.replace('-', '').upper()
+    for user in users.values():
+        normalized_user_acc = user["account_number"].replace('-', '').upper()
+        if normalized_user_acc == normalized_target:
+            return {
+                "username": user["username"],
+                "account_number": user["account_number"]
+            }
+    
+    raise HTTPException(status_code=404, detail="User not found")
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page(request: Request):
+    return templates.TemplateResponse("signup.html", {"request": request})
