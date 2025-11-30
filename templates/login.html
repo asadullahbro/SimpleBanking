@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>SimpleBanking - Login</title>
+    <style>
+        /* background gradient animation */
+        @keyframes bgShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: "Poppins", Arial, sans-serif;
+            background: linear-gradient(135deg, #8f6bff, #5d34f5, #4f2ce4, #9a79ff);
+            background-size: 300% 300%;
+            animation: bgShift 12s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Container styles */
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 35px;
+            margin: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Glass card effect */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(15px);
+            z-index: -1;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Form styles */
+        form {
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        form h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            animation: slideIn 0.8s ease-out 0.2s both;
+        }
+
+        /* Form group styles */
+        .form-group {
+            margin-bottom: 25px;
+            animation: slideIn 0.8s ease-out 0.4s both;
+        }
+
+        .form-group:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .form-group:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            opacity: 0.9;
+            text-align: left;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 16px;
+            font-family: "Poppins", sans-serif;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        input[type="text"]::placeholder,
+        input[type="password"]::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Button styles */
+        button {
+            background: rgba(255, 255, 255, 0.85);
+            color: #4a2bd6;
+            padding: 16px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+            font-family: "Poppins", sans-serif;
+            animation: slideIn 0.8s ease-out 0.7s both;
+        }
+
+        button:hover {
+            transform: translateY(-3px) scale(1.02);
+            background: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Signup link styles */
+        .signup-link {
+            margin-top: 25px;
+            text-align: center;
+            animation: fadeIn 1s ease-out 0.9s both;
+        }
+
+        .signup-link p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .signup-link a {
+            color: white;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form>
+            <h2>Login to Your Account</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+            
+            <!-- Added signup link -->
+            <div class="signup-link">
+                <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
+            </div>
+        </form>
+    </div>
+    <script>
+        document.querySelector('form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const res = await fetch("http://127.0.0.1:8000/token", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'username': username,
+                        'password': password,
+                    })
+                })
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    const userRes = await fetch(`http://127.0.0.1:8000/users/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${data.access_token}`
+                        }
+                    });
+                const userData = await userRes.json();
+                    localStorage.setItem('username', userData.username);
+                    localStorage.setItem('account_number', userData.account_number);
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Login failed. Please check your username and password.');
+                }
+            } catch (error) {
+                console.error('Error during login:', error);
+                alert('An error occurred. Please try again later.');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
