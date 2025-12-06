@@ -18,7 +18,7 @@
                 })
                 if (res.ok) {
                     const data = await res.json();
-                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('authToken', data.access_token);
                     const userRes = await fetch(`http://127.0.0.1:8000/users/me`, {
                         headers: {
                             'Authorization': `Bearer ${data.access_token}`

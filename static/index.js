@@ -4,7 +4,7 @@
         
         // Authentication check
         document.addEventListener('DOMContentLoaded', function() {
-            const authenticated = localStorage.getItem('access_token') !== null;
+            const authenticated = localStorage.getItem('authToken') !== null;
             if(!authenticated){
                 window.location.href = 'login';
                 return;
@@ -83,7 +83,7 @@
         // Logout function
         function logout() {
             clearTimeout(inactivityTimer);
-            localStorage.removeItem('access_token');
+            localStorage.removeItem('authToken');
             localStorage.removeItem('username');
             window.location.href = 'login';
         }
@@ -163,7 +163,7 @@
             const response = await handleApiCall(async () => {
                 return await fetch('http://127.0.0.1:8000/balance', {
                     headers: {
-                        "Authorization": "Bearer " + localStorage.getItem('access_token')
+                        "Authorization": "Bearer " + localStorage.getItem('authToken')
                     }
                 });
             });
@@ -181,7 +181,7 @@
 
         async function processDeposit() {
             const amount = parseFloat(document.getElementById('depositAmount').value);
-            const currentToken = localStorage.getItem('access_token');
+            const currentToken = localStorage.getItem('authToken');
             const button = document.querySelector('#depositModal button[onclick="processDeposit()"]');
             
             if (!validateAmount(amount)) return;
@@ -217,7 +217,7 @@
 
         async function processWithdraw() {
             const amount = parseFloat(document.getElementById('withdrawAmount').value);
-            const currentToken = localStorage.getItem('access_token');
+            const currentToken = localStorage.getItem('authToken');
             const button = document.querySelector('#withdrawModal button[onclick="processWithdraw()"]');
             
             if (!validateAmount(amount)) return;
@@ -279,7 +279,7 @@
         const response = await handleApiCall(async () => {
             return await fetch(`http://127.0.0.1:8000/users/${normalizedAccNum}`, {
                 headers: {
-                    "Authorization": "Bearer " + localStorage.getItem('access_token')
+                    "Authorization": "Bearer " + localStorage.getItem('authToken')
                 }
             });
         });
@@ -340,7 +340,7 @@
             const accountNumber = modal.dataset.accountNumber;
             const button = document.querySelector('#confirmTransferModal button[onclick="confirmTransfer()"]');
 
-            const currentToken = localStorage.getItem('access_token');
+            const currentToken = localStorage.getItem('authToken');
             
             setLoading(button, true);
             
@@ -384,7 +384,7 @@ async function loadTransactionHistory() {
         const response = await handleApiCall(async () => {
             return await fetch('http://127.0.0.1:8000/transactions', {
                 headers: {
-                    "Authorization": "Bearer " + localStorage.getItem('access_token')
+                    "Authorization": "Bearer " + localStorage.getItem('authToken')
                 }
             });
         });

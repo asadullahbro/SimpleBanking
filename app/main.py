@@ -13,7 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
-
+import sqlite3
+DB_FILE = "simple_banking.db"
 SECRET_KEY = "if_you_use_a_real_secret_key_your_app_will_be_more_secure"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -31,7 +32,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+def get_db_connection():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
 def hash_password(password: str) -> str:
     password_bytes = password.encode('utf-8')
     sha256_hash = hashlib.sha256(password_bytes).digest()
@@ -50,7 +54,37 @@ def verify_password_complexity(password: str) -> bool:
         not any(c in "!@#$%^&*()-_=+[]{}|;:'\",.<>?/`~" for c in password)):
         return False
     return True
-
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Users table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        hashed_password TEXT NOT NULL,
+        balance REAL DEFAULT 0,
+        account_number TEXT UNIQUE NOT NULL
+    )
+    ''')
+    
+    # Transactions table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT,
+        balance_after REAL,
+        related_account TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(username)
+    )
+    ''')
+    conn.commit()
+    conn.close()
+init_db()
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -81,27 +115,40 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return user
 
-def load_transactions():
-    try:
-        with open("transactions.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
-    except json.JSONDecodeError:
-        return []
 
 def generate_transaction_id():
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     unique_id = str(uuid.uuid4())[:8]
     return f"tx_{timestamp}_{unique_id}"
 
-def save_transaction(transaction):
-    transactions = load_transactions()
-    transaction["id"] = generate_transaction_id()
-    transaction["timestamp"] = datetime.now().isoformat()
-    transactions.append(transaction)
-    with open("transactions.json", "w") as f:
-        json.dump(transactions, f, indent=2)
+def save_transaction(tx):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    tx_id = generate_transaction_id()
+    cursor.execute('''
+        INSERT INTO transactions (id, user_id, type, amount, description, balance_after, related_account)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        tx_id,
+        tx["user_id"],
+        tx["type"],
+        tx["amount"],
+        tx.get("description"),
+        tx.get("balance_after"),
+        tx.get("to_account") or tx.get("from_account")
+    ))
+    conn.commit()
+    conn.close()
+
+def get_user_transactions(username):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC
+    ''', (username,))
+    transactions = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return transactions
 
 def log_deposit(username, amount, balance_after):
     transaction = {
@@ -145,22 +192,36 @@ def log_transfer_receiver(to_user, amount, from_account, balance_after):
     }
     save_transaction(transaction)
 
-def get_user_transactions(username):
-    transactions = load_transactions()
-    user_tx = [tx for tx in transactions if tx["user_id"] == username]
-    return sorted(user_tx, key=lambda x: x["timestamp"], reverse=True)
-
 def load_users():
-    try:
-        with open("users.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = {row["username"]: dict(row) for row in cursor.fetchall()}
+    conn.close()
+    return users
 
-def save_users(users):
-    with open("users.json", "w") as f:
-        json.dump(users, f)
+import sqlite3
 
+def save_user(user: dict):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO users (username, hashed_password, balance, account_number)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET
+            hashed_password = excluded.hashed_password,
+            balance = excluded.balance,
+            account_number = excluded.account_number
+    """, (
+        user["username"],
+        user["hashed_password"],
+        user["balance"],
+        user["account_number"]
+    ))
+
+    conn.commit()
+    conn.close()
 def authenticate_user(username: str, password: str):
     users = load_users()
     user = users.get(username)
@@ -173,9 +234,8 @@ def authenticate_user(username: str, password: str):
 def deposit(username: str, amount: float):
     users = load_users()
     if username in users:
-        old_balance = users[username]["balance"]
         users[username]["balance"] += amount
-        save_users(users)
+        save_user(users[username])
         log_deposit(username, amount, users[username]["balance"])
     else:
         raise HTTPException(status_code=404, detail="User not found")
@@ -186,7 +246,7 @@ def withdraw(username: str, amount: float):
         if users[username]["balance"] >= amount:
             old_balance = users[username]["balance"]
             users[username]["balance"] -= amount
-            save_users(users)
+            save_user(users[username])
             log_withdrawal(username, amount, users[username]["balance"])
         else:
             raise HTTPException(status_code=400, detail="Insufficient funds")
@@ -214,8 +274,8 @@ def signup(username: str = Form(...), password: str = Form(...)):
     if not verify_password_complexity(password):
         raise HTTPException(status_code=400, detail="Password does not meet complexity requirements")
     hashed_password = hash_password(password)
-    users[username] = {"username": username, "hashed_password": hashed_password, "balance": 0.0, "account_number": make_account_number(username)}
-    save_users(users)
+    new_user = {"username": username, "hashed_password": hashed_password, "balance": 0.0, "account_number": make_account_number(username)}
+    save_user(new_user)
     return {"msg": "User created successfully"}
 
 @app.post("/token")
@@ -333,3 +393,4 @@ async def login_page(request: Request):
 @app.get("/signup", response_class=HTMLResponse)
 async def signup_page(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
+
