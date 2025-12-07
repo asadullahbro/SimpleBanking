@@ -179,3 +179,110 @@
             text-decoration: underline;
             opacity: 1;
         }
+/* Modal Styles */
+.modal {
+    display: none; /* THIS IS CRITICAL! */
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+/* Rest of your modal CSS... */
+
+.modal-content {
+    position: relative;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(15px);
+    margin: auto;
+    padding: 40px 35px;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: float 3s ease-in-out infinite, fadeIn 0.6s ease-out 0.1s both;
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.instruction {
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    flex: 1;
+    margin: 0;
+}
+
+.modal-buttons button:first-child {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.modal-buttons button:first-child:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.message {
+    min-height: 24px;
+    margin-top: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.message.error {
+    color: #ff6b6b;
+}
+
+.message.success {
+    color: #4ade80;
+}
+
+/* Loading state */
+button.loading {
+    opacity: 0.8;
+    pointer-events: none;
+    position: relative;
+    color: transparent;
+}
+
+button.loading::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}

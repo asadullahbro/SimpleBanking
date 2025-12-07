@@ -8,24 +8,43 @@
 </head>
 <body>
     <div class="container">
-        <form>
+        <!-- Login Form -->
+        <form id="loginForm">
             <h2>Login to Your Account</h2>
             <div class="form-group">
                 <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+                <input type="text" id="username" name="username" required autofocus>
             </div>
             <div class="form-group">
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit" id="loginBtn">Login</button>
             
-            <!-- Added signup link -->
             <div class="signup-link">
                 <p>Don't have an account? <a href="signup">Sign up here</a></p>
             </div>
         </form>
     </div>
+
+    <!-- 2FA Modal (HIDDEN by default) -->
+    <div id="twoFAModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Two-Factor Authentication</h2>
+            <p class="instruction">Please enter the 6-digit code from your authenticator app:</p>
+            
+            <div class="form-group">
+                <input type="text" id="twoFACode" placeholder="Enter 6-digit code" maxlength="6" autocomplete="off" required>
+                <div id="twoFAMessage" class="message"></div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button id="cancel2FA">Cancel</button>
+                <button id="verify2FA">Verify</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/login.js"></script>
 </body>
 </html>

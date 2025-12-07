@@ -26,7 +26,9 @@
             <button class="withdraw" onclick="showWithdrawModal()">Withdraw</button>
             <button class="details" onclick="showAccDetails()">Show Account Details</button>
             <button class="transfer" onclick="showTransferModal()">Transfer Funds</button>
+            <button class="settings twoFA-btn" onclick="toggle2FA()" id="twoFABtn">Enable 2FA</button>
             <button class="logout" onclick="logout()">Logout</button>
+            
         </div>
     <!-- Deposit Modal -->
     <div id="depositModal" class="modal">
@@ -51,7 +53,20 @@
             </div>
         </div>
     </div>
-
+<div id="twoFAModal" class="modal">
+    <div class="modal-content">
+        <h3>Two-Factor Authentication (2FA)</h3>
+        <p>Scan the QR code below with your authenticator app:</p>
+        <img id="qrCode2FA" src="" alt="QR Code will appear here" style="margin-top: 15px;">
+        <p>Then enter the 6-digit code from your app:</p>
+        <input type="text" id="otp2FA" placeholder="123456" maxlength="6">
+        <div class="modal-buttons">
+            <button onclick="hideModal('twoFAModal')">Cancel</button>
+            <button onclick="verify2FA()" style="background: #facc15; color: white;">Verify & Enable</button>
+        </div>
+        <p id="msg2FA" style="color: green; font-weight: bold; margin-top: 10px;"></p>
+    </div>
+</div>
     <!-- Transfer Modal -->
     <div id="transferModal" class="modal">
         <div class="modal-content">
