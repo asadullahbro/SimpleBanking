@@ -12,7 +12,8 @@
 
             // Initialize the dashboard
             initializeDashboard();
-            
+            // Check 2FA status
+            check2FAStatus();
             // Set up inactivity timer
             resetInactivityTimer();
             
@@ -21,7 +22,23 @@
             document.addEventListener('keypress', resetInactivityTimer);
             document.addEventListener('click', resetInactivityTimer);
         });
-
+        document.addEventListener('DOMContentLoaded', function() {
+    // Add Enter key support for password form
+    const passwordInputs = ['currentPassword', 'newPassword', 'confirmPassword'];
+    passwordInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    changePassword();
+                }
+            });
+        }
+    });
+    
+    // Initialize 2FA status on load
+    initialize2FAStatus();
+});
         // Initialize dashboard
         function initializeDashboard() {
             // Welcome message
@@ -67,18 +84,27 @@
         }
 
         function hideModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            // Clear input fields
-            const amountInput = document.getElementById(modalId.replace('Modal', 'Amount'));
-            if (amountInput) amountInput.value = '';
-            
-            // Clear recipient info for transfer modal
-            if (modalId === 'transferModal') {
-                document.getElementById('recipientName').textContent = '';
-                document.getElementById('accountNumber').value = '';
-                currentRecipient = null;
-            }
-        }
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Special handling for settings modal
+    if (modalId === 'settingsModal') {
+        hidePasswordForm(); // Also hide the password form
+    }
+    
+    // Clear input fields for specific modals
+    const amountInput = document.getElementById(modalId.replace('Modal', 'Amount'));
+    if (amountInput) amountInput.value = '';
+    
+    // Clear recipient info for transfer modal
+    if (modalId === 'transferModal') {
+        document.getElementById('recipientName').textContent = '';
+        document.getElementById('accountNumber').value = '';
+        currentRecipient = null;
+    }
+}
 
         // Logout function
         function logout() {
@@ -120,13 +146,13 @@
             
             return true;
         }
-let is2FAEnabled = false;
+let is2FAEnabled =  false;
 let pending2FASecret = null; // Store secret temporarily during setup
 
 async function check2FAStatus() {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`${API_BASE_URL}/users/me`, {
+        const response = await fetch(`${API_BASE_URL}/2fa/status`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -139,30 +165,119 @@ async function check2FAStatus() {
         }
     } catch (error) {
         console.error('Error checking 2FA status:', error);
+        // Default to false if error
+        is2FAEnabled = false;
+        update2FAButton(false);
+    }
+}
+function showSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    modal.style.display = 'flex';
+    check2FAStatus(); // Update 2FA button status
+}
+function hidePasswordForm() {
+    const form = document.getElementById('passwordForm');
+    if (form) {
+        form.style.display = 'none';
+        // Clear password fields
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('passwordMsg').textContent = '';
     }
 }
 
-function update2FAButton(isEnabled) {
-    const btn = document.querySelector('.settings') || document.getElementById('twoFABtn');
-    if (btn) {
-        if (isEnabled) {
-            btn.textContent = 'Disable 2FA';
-            btn.style.background = '#ef4444'; // Red color
-            btn.style.color = 'white';
+function showPasswordForm() {
+    const form = document.getElementById('passwordForm');
+    if (form) {
+        form.style.display = 'block';
+        document.getElementById('currentPassword').focus();
+    }
+}
+
+// Password update
+// Password update function (you already have this, but ensure it works with new form)
+async function changePassword() {
+    const current = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    const msg = document.getElementById('passwordMsg');
+
+    msg.textContent = '';
+    msg.style.color = '';
+
+    if (!current || !newPass || !confirm) {
+        msg.textContent = 'All fields are required';
+        msg.style.color = '#f87171';
+        return;
+    }
+
+    if (newPass !== confirm) {
+        msg.textContent = 'New passwords do not match';
+        msg.style.color = '#f87171';
+        return;
+    }
+
+    // Optional: Add password strength validation
+    if (newPass.length < 8) {
+        msg.textContent = 'Password must be at least 8 characters';
+        msg.style.color = '#f87171';
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const formData = new FormData();
+        formData.append('current_password', current);
+        formData.append('new_password', newPass);
+
+        const response = await fetch(`${API_BASE_URL}/change_password`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            msg.textContent = 'Password updated successfully!';
+            msg.style.color = '#4ade80';
+            // Clear form after successful update
+            setTimeout(() => {
+                hidePasswordForm();
+            }, 2000);
         } else {
-            btn.textContent = 'Enable 2FA';
-            btn.style.background = ''; // Reset to default
-            btn.style.color = '';
+            msg.textContent = data.detail || 'Failed to update password';
+            msg.style.color = '#f87171';
+        }
+    } catch (err) {
+        console.error('Password change error:', err);
+        msg.textContent = 'Network error. Please try again.';
+        msg.style.color = '#f87171';
+    }
+}
+async function initialize2FAStatus() {
+    await check2FAStatus();
+}
+function update2FAButton(isEnabled) {
+    const toggleContainer = document.getElementById('twoFAToggle');
+    const statusText = document.getElementById('twoFAStatusText');
+    
+    if (toggleContainer && statusText) {
+        if (isEnabled) {
+            toggleContainer.classList.add('active');
+            statusText.textContent = 'On';
+            statusText.style.color = '#4ade80';
+        } else {
+            toggleContainer.classList.remove('active');
+            statusText.textContent = 'Off';
+            statusText.style.color = '#f87171';
         }
     }
 }
-
 async function toggle2FA() {
     if (is2FAEnabled) {
-        // Show confirmation modal for disabling 2FA
         showDisable2FAModal();
     } else {
-        // Enable 2FA - show QR code modal
         show2FAModal();
     }
 }
@@ -590,6 +705,315 @@ async function confirmDisable2FA() {
         }
     }
 }
+// Transaction History Functions
+let allTransactions = [];
+let currentPage = 1;
+const transactionsPerPage = 10;
+
+function showTransactionHistory() {
+    document.getElementById('transactionHistoryModal').style.display = 'flex';
+    loadFullTransactionHistory();
+}
+
+async function loadFullTransactionHistory() {
+    try {
+        const container = document.getElementById('fullTransactionsList');
+        container.innerHTML = '<div class="loading-history">Loading transactions...</div>';
+        
+        const response = await fetch(`${API_BASE_URL}/transactions`, {
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem('authToken')
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            allTransactions = data.transactions || [];
+            
+            // Sort by date (newest first)
+            allTransactions.sort((a, b) => new Date(b.timestamp || b.date || b.created_at) - new Date(a.timestamp || a.date || a.created_at));
+            
+            displayFullTransactionHistory();
+            updateTransactionStats();
+        } else {
+            container.innerHTML = '<div class="no-transactions">Failed to load transactions</div>';
+        }
+    } catch (error) {
+        console.error('Error loading transaction history:', error);
+        document.getElementById('fullTransactionsList').innerHTML = '<div class="no-transactions">Error loading transactions</div>';
+    }
+}
+
+function displayFullTransactionHistory() {
+    const container = document.getElementById('fullTransactionsList');
+    const filteredTransactions = filterTransactionList(allTransactions);
+    
+    if (!filteredTransactions || filteredTransactions.length === 0) {
+        container.innerHTML = '<div class="no-transactions">No transactions found</div>';
+        return;
+    }
+    
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+    const startIndex = (currentPage - 1) * transactionsPerPage;
+    const endIndex = startIndex + transactionsPerPage;
+    const pageTransactions = filteredTransactions.slice(startIndex, endIndex);
+    
+    // Display transactions
+    container.innerHTML = pageTransactions.map(transaction => {
+        const type = getTransactionType(transaction);
+        const displayAmount = getTransactionAmountDisplay(transaction);
+        const description = transaction.description || 
+                           (type === 'transfer-out' ? `Transfer to ${transaction.to_account_number || 'user'}` :
+                            type === 'transfer-in' ? `Transfer from ${transaction.from_account_number || 'user'}` :
+                            'Transaction');
+        const date = transaction.timestamp || transaction.date || transaction.created_at;
+        const isPositive = displayAmount >= 0;
+        
+        return `
+            <div class="transaction-row">
+                <div class="transaction-info">
+                    <div class="transaction-type ${type}">
+                        ${type === 'transfer-out' ? 'Transfer Sent' :
+                          type === 'transfer-in' ? 'Transfer Received' :
+                          type.charAt(0).toUpperCase() + type.slice(1)}
+                    </div>
+                    <div class="transaction-desc">${description}</div>
+                    <div class="transaction-date">${formatDate(date)}</div>
+                </div>
+                <div class="transaction-amount ${isPositive ? 'amount-positive' : 'amount-negative'}">
+                    ${isPositive ? '+' : '-'}$${Math.abs(displayAmount).toFixed(2)}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Update pagination
+    updatePaginationControls(totalPages);
+}
+
+function getTransactionType(transaction) {
+    const currentUserAcc = localStorage.getItem('account_number');
+    let type = transaction.type ? transaction.type.toLowerCase() : '';
+
+    // Prioritize detecting transfer direction
+    if (transaction.to_account_number && transaction.from_account_number) {
+        // FIX: Convert transaction accounts to String() to ensure '===' works
+        // even if the API returns numbers.
+        const fromAcc = String(transaction.from_account_number).replace(/-/g, '').trim();
+        const toAcc = String(transaction.to_account_number).replace(/-/g, '').trim();
+
+        if (fromAcc === currentUserAcc) {
+            return 'transfer-out';
+        } else if (toAcc === currentUserAcc) {
+            return 'transfer-in';
+        }
+    }
+
+    if (type) return type;
+
+    // Fallbacks
+    const amount = parseFloat(transaction.amount) || 0;
+    const desc = (transaction.description || '').toLowerCase();
+    
+    if (desc.includes('deposit') || amount > 0) {
+        return 'deposit';
+    } else if (desc.includes('withdraw') || desc.includes('withdrawal') || amount < 0) {
+        return 'withdraw';
+    }
+    
+    return amount >= 0 ? 'deposit' : 'withdraw';
+}
+function getTransactionAmountDisplay(transaction) {
+    const amount = parseFloat(transaction.amount) || 0;
+    const type = getTransactionType(transaction);
+    
+    // Determine if amount should be positive or negative
+    switch(type) {
+        case 'deposit':
+        case 'transfer-in':
+            return Math.abs(amount); // Positive for incoming money
+        case 'withdraw':
+        case 'transfer-out':
+            return -Math.abs(amount); // Negative for outgoing money
+        default:
+            return amount;
+    }
+}
+
+function filterTransactionList(transactions) {
+    const filter = document.getElementById('historyFilter').value;
+    const period = document.getElementById('historyPeriod').value;
+    const search = document.getElementById('historySearch').value.toLowerCase();
+    
+    let filtered = transactions;
+    
+    // Filter by type
+    if (filter !== 'all') {
+        filtered = filtered.filter(t => getTransactionType(t) === filter);
+    }
+    
+    // Filter by period
+    if (period !== 'all') {
+        const daysAgo = parseInt(period);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+        
+        filtered = filtered.filter(t => {
+            const transactionDate = new Date(t.timestamp || t.date || t.created_at);
+            return transactionDate >= cutoffDate;
+        });
+    }
+    
+    // Filter by search
+    if (search) {
+        filtered = filtered.filter(t => {
+            const desc = t.description || '';
+            const amount = t.amount ? t.amount.toString() : '';
+            return desc.toLowerCase().includes(search) || 
+                   amount.includes(search);
+        });
+    }
+    
+    return filtered;
+}
+
+function filterTransactions() {
+    currentPage = 1; // Reset to first page when filtering
+    displayFullTransactionHistory();
+    updateTransactionStats();
+}
+
+function updateTransactionStats() {
+    const filteredTransactions = filterTransactionList(allTransactions);
+    
+    let totalDeposits = 0;
+    let totalWithdrawals = 0;
+    let totalTransfersOut = 0;
+    let totalTransfersIn = 0;
+    
+    filteredTransactions.forEach(t => {
+        const type = getTransactionType(t);
+        const amount = Math.abs(parseFloat(t.amount) || 0);
+        
+        switch(type) {
+            case 'deposit':
+                totalDeposits += amount;
+                break;
+            case 'withdraw':
+                totalWithdrawals += amount;
+                break;
+            case 'transfer-out':
+                totalTransfersOut += amount;
+                break;
+            case 'transfer-in':
+                totalTransfersIn += amount;
+                break;
+        }
+    });
+    
+    const totalTransfers = totalTransfersOut + totalTransfersIn;
+    const netChange = totalDeposits + totalTransfersIn - totalWithdrawals - totalTransfersOut;
+    
+    document.getElementById('totalDeposits').textContent = `$${totalDeposits.toFixed(2)}`;
+    document.getElementById('totalWithdrawals').textContent = `$${totalWithdrawals.toFixed(2)}`;
+    document.getElementById('totalTransfers').textContent = `$${totalTransfers.toFixed(2)}`;
+    document.getElementById('netChange').textContent = `${netChange >= 0 ? '+' : ''}$${netChange.toFixed(2)}`;
+    document.getElementById('netChange').style.color = netChange >= 0 ? '#4ade80' : '#f87171';
+}
+
+function updatePaginationControls(totalPages) {
+    const container = document.getElementById('historyPagination');
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = `
+        <button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+            ← Previous
+        </button>
+    `;
+    
+    // Show page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            paginationHTML += `
+                <button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            paginationHTML += `<span class="page-dots">...</span>`;
+        }
+    }
+    
+    paginationHTML += `
+        <button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+            Next →
+        </button>
+    `;
+    
+    container.innerHTML = paginationHTML;
+}
+
+function changePage(page) {
+    const filteredTransactions = filterTransactionList(allTransactions);
+    const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+    
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        displayFullTransactionHistory();
+    }
+}
+
+function exportTransactions() {
+    const filteredTransactions = filterTransactionList(allTransactions);
+    
+    if (filteredTransactions.length === 0) {
+        showMessage('No transactions to export', 'error');
+        return;
+    }
+    
+    // Convert to CSV
+    const csv = convertToCSV(filteredTransactions);
+    
+    // Create download link
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showMessage('Transactions exported successfully!', 'success');
+}
+
+function convertToCSV(transactions) {
+    const headers = ['Date', 'Type', 'Description', 'Amount', 'Balance'];
+    
+    const rows = transactions.map(t => {
+        const date = new Date(t.timestamp || t.date || t.created_at).toLocaleDateString();
+        const type = getTransactionType(t).toUpperCase();
+        const description = t.description || '';
+        const amount = parseFloat(t.amount) || 0;
+        const balance = t.balance_after || t.new_balance || '';
+        
+        return [
+            `"${date}"`,
+            `"${type}"`,
+            `"${description.replace(/"/g, '""')}"`,
+            amount.toFixed(2),
+            balance ? balance.toFixed(2) : ''
+        ].join(',');
+    });
+    
+    return [headers.join(','), ...rows].join('\n');
+}
         // API call handler with error management
         async function handleApiCall(apiCall) {
             try {
@@ -872,50 +1296,6 @@ async function loadTransactionHistory() {
     }
 }
 
-/*function displayTransactions(transactions) {
-    const container = document.getElementById('transactions-list');
-    if (!container) return;
-    
-    // Ensure transactions is an array
-    if (!Array.isArray(transactions)) {
-        console.error('Transactions is not an array:', transactions);
-        transactions = [];
-    }
-    
-    if (transactions.length === 0) {
-        container.innerHTML = '<div class="transaction-item">No recent transactions</div>';
-        return;
-    }
-    
-    // Sort transactions by date (newest first)
-    const sortedTransactions = transactions.sort((a, b) => {
-        const dateA = new Date(a.timestamp || a.created_at || 0);
-        const dateB = new Date(b.timestamp || b.created_at || 0);
-        return dateB - dateA;
-    });
-    
-    // Take only the last 5 transactions
-    const recentTransactions = sortedTransactions.slice(0, 5);
-    
-    container.innerHTML = recentTransactions.map(transaction => {
-        const amount = transaction.amount || 0;
-        const description = transaction.description || 'Transaction';
-        const date = transaction.timestamp || transaction.created_at || new Date().toISOString();
-        const isPositive = amount >= 0;
-        
-        return `
-            <div class="transaction-item">
-                <div class="transaction-details">
-                    <div class="transaction-description">${description}</div>
-                    <div class="transaction-date">${formatDate(date)}</div>
-                </div>
-                <div class="transaction-amount ${isPositive ? 'positive' : 'negative'}">
-                    ${isPositive ? '+' : '-'}$${Math.abs(amount).toFixed(2)}
-                </div>
-            </div>
-        `;
-    }).join('');
-}*/
 
 function formatDate(dateString) {
     try {
@@ -925,32 +1305,6 @@ function formatDate(dateString) {
         return 'Invalid date';
     }
 }
-        function displayTransactions(transactions) {
-            const container = document.getElementById('transactions-list');
-            if (!container) return;
-            
-            if (!transactions || transactions.length === 0) {
-                container.innerHTML = '<div class="transaction-item">No recent transactions</div>';
-                return;
-            }
-            
-            // Sort transactions by date (newest first) and take the last 5
-            const recentTransactions = transactions
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
-                .slice(0, 5);
-            
-            container.innerHTML = recentTransactions.map(transaction => `
-                <div class="transaction-item">
-                    <div class="transaction-details">
-                        <div class="transaction-description">${transaction.description || 'Transaction'}</div>
-                        <div class="transaction-date">${formatDate(transaction.date)}</div>
-                    </div>
-                    <div class="transaction-amount ${transaction.amount >= 0 ? 'positive' : 'negative'}">
-                        ${transaction.amount >= 0 ? '+' : '-'}$${Math.abs(transaction.amount).toFixed(2)}
-                    </div>
-                </div>
-            `).join('');
-        }
 
         function formatDate(dateString) {
             const date = new Date(dateString);

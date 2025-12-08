@@ -302,73 +302,6 @@
                 font-size: 28px;
             }
         }
-/* Settings Button */
-.settings-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.settings-btn:hover {
-    background: white;
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Settings Modal Styles */
-.settings-content {
-    max-width: 600px;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.settings-section {
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.settings-section h3 {
-    margin-bottom: 15px;
-    color: #4a5568;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background: #f8fafc;
-    border-radius: 8px;
-    margin-bottom: 10px;
-}
-
-.setting-info h4 {
-    margin: 0 0 5px 0;
-    color: #2d3748;
-}
-
-.setting-info p {
-    margin: 0;
-    color: #718096;
-    font-size: 14px;
-}
-
-.setting-actions {
-    display: flex;
-    gap: 10px;
-}
 
 /* Button Styles */
 .btn-toggle {
@@ -687,7 +620,453 @@ input:checked + .slider:before {
     flex-grow: 1;
     margin-left: 15px;
 }
+/* Settings Options - Only 2 options */
+.settings-option {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
+.settings-option:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(5px);
+    border-color: rgba(143, 107, 255, 0.3);
+}
+
+.option-icon {
+    font-size: 24px;
+    margin-right: 15px;
+    width: 50px;
+    height: 50px;
+    background: rgba(143, 107, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.option-text {
+    flex: 1;
+}
+
+.option-text h4 {
+    margin: 0 0 5px 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: white;
+}
+
+.option-text p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.option-arrow {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s ease;
+}
+
+.settings-option:hover .option-arrow {
+    color: #8f6bff;
+    transform: translateX(5px);
+}
+
+/* Toggle Switch */
+.toggle-container {
+    width: 50px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 13px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-container.active {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.toggle-slider {
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-container.active .toggle-slider {
+    left: 26px;
+}
+
+/* Password Form */
+.password-form {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 25px;
+    margin-top: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: fadeIn 0.4s ease-out;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.form-header h4 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+}
+
+.btn-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+.password-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.password-form input[type="password"] {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-family: "Poppins", sans-serif;
+    transition: all 0.3s ease;
+}
+
+.password-form input[type="password"]:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #8f6bff;
+    box-shadow: 0 0 0 3px rgba(143, 107, 255, 0.2);
+    outline: none;
+}
+
+.form-buttons .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #8f6bff, #5d34f5);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.form-buttons .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(143, 107, 255, 0.3);
+}
+
+#passwordMsg {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+}
+
+#passwordMsg.success {
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+#passwordMsg.error {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* Close button */
+.modal-buttons {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-cancel {
+    width: 100%;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+/* Transaction History Modal Styles */
+.history-content {
+    max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 25px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: white;
+}
+
+.history-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.filter-controls, .search-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-controls select, 
+#historySearch {
+    flex: 1;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+#historySearch::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-export {
+    padding: 12px 20px;
+    background: rgba(74, 222, 128, 0.2);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 8px;
+    color: #4ade80;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-export:hover {
+    background: rgba(74, 222, 128, 0.3);
+    transform: translateY(-2px);
+}
+
+.history-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+}
+
+.transactions-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.transaction-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.transaction-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+}
+
+.transaction-row:last-child {
+    border-bottom: none;
+}
+
+.transaction-info {
+    flex: 1;
+}
+
+.transaction-type {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.transaction-type.deposit::before {
+    content: '↑';
+    color: #4ade80;
+}
+
+.transaction-type.withdraw::before {
+    content: '↓';
+    color: #f87171;
+}
+
+.transaction-type.transfer-out::before {
+    content: '→';
+    color: #f59e0b;
+}
+
+.transaction-type.transfer-in::before {
+    content: '←';
+    color: #60a5fa;
+}
+
+.transaction-desc {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 5px;
+}
+
+.transaction-date {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.transaction-amount {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.amount-positive {
+    color: #4ade80;
+}
+
+.amount-negative {
+    color: #f87171;
+}
+
+.history-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.page-btn {
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.page-btn.active {
+    background: rgba(143, 107, 255, 0.3);
+    border-color: rgba(143, 107, 255, 0.5);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.loading-history {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+}
+
+.no-transactions {
+    text-align: center;
+    padding: 40px;
+    color: rgba(255, 255, 255, 0.7);
+}
 /* Responsive Design */
 @media (max-width: 768px) {
     .setting-item {

@@ -26,9 +26,9 @@
             <button class="withdraw" onclick="showWithdrawModal()">Withdraw</button>
             <button class="details" onclick="showAccDetails()">Show Account Details</button>
             <button class="transfer" onclick="showTransferModal()">Transfer Funds</button>
-            <button class="settings twoFA-btn" onclick="toggle2FA()" id="twoFABtn">Enable 2FA</button>
+            <button class="settings-btn" onclick="showSettingsModal()">Settings</button>
+            <button class="dashboard-btn" onclick="showTransactionHistory()">Transaction History</button>
             <button class="logout" onclick="logout()">Logout</button>
-            
         </div>
     <!-- Deposit Modal -->
     <div id="depositModal" class="modal">
@@ -41,7 +41,126 @@
             </div>
         </div>
     </div>
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal">
+    <div class="modal-content settings-content">
+        <h3>Account Settings</h3>
+        
+        <!-- Option 1: Change Password -->
+        <div class="settings-option" onclick="showPasswordForm()">
+            <div class="option-icon">🔒</div>
+            <div class="option-text">
+                <h4>Change Password</h4>
+                <p>Update your account password</p>
+            </div>
+            <div class="option-arrow">›</div>
+        </div>
+        
+        <!-- Option 2: Two-Factor Authentication -->
+        <div class="settings-option" onclick="toggle2FA()">
+            <div class="option-icon">🔐</div>
+            <div class="option-text">
+                <h4>Two-Factor Authentication</h4>
+                <p id="twoFAStatus">Status: <span id="twoFAStatusText">Off</span></p>
+            </div>
+            <div class="toggle-container" id="twoFAToggle">
+                <div class="toggle-slider"></div>
+            </div>
+        </div>
 
+        <!-- Password Form (hidden by default) -->
+        <div id="passwordForm" class="password-form" style="display: none;">
+            <div class="form-header">
+                <h4>Change Password</h4>
+                <button class="btn-close" onclick="hidePasswordForm()">×</button>
+            </div>
+            <div class="form-group">
+                <input type="password" id="currentPassword" placeholder="Current Password">
+                <input type="password" id="newPassword" placeholder="New Password">
+                <input type="password" id="confirmPassword" placeholder="Confirm New Password">
+            </div>
+            <div class="form-buttons">
+                <button class="btn-primary" onclick="changePassword()">Update Password</button>
+            </div>
+            <p id="passwordMsg"></p>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="hideModal('settingsModal')">Close</button>
+        </div>
+    </div>
+</div>
+</div>
+<div id="transactionHistoryModal" class="modal">
+    <div class="modal-content history-content">
+        <div class="modal-header">
+            <h3>Transaction History</h3>
+            <button class="btn-close" onclick="hideModal('transactionHistoryModal')">×</button>
+        </div>
+        
+        <div class="history-controls">
+            <div class="filter-controls">
+                <select id="historyFilter" onchange="filterTransactions()" style="background-color: #333; /* Dark background */
+    color: white;           /* White text */
+    border: 1px solid #555;
+    appearance: none;       /* Crucial for custom styling */
+    padding: 8px 12px;">
+                    <option value="all">All Transactions</option>
+                </select>
+                
+                <select id="historyPeriod" onchange="filterTransactions()" style="background-color: #333; /* Dark background */
+    color: white;           /* White text */
+    border: 1px solid #555;
+    appearance: none;       /* Crucial for custom styling */
+    padding: 8px 12px;">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="365">Last year</option>
+                    <option value="all">All time</option>
+                </select>
+            </div>
+            
+            <div class="search-controls">
+                <input type="text" 
+                       id="historySearch" 
+                       placeholder="Search transactions..."
+                       onkeyup="filterTransactions()">
+                <button onclick="exportTransactions()" class="btn-export">
+                    📥 Export
+                </button>
+            </div>
+        </div>
+        
+        <div class="history-stats">
+            <div class="stat-card">
+                <span class="stat-label">Total Deposits</span>
+                <span class="stat-value" id="totalDeposits">$0.00</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Withdrawals</span>
+                <span class="stat-value" id="totalWithdrawals">$0.00</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Transfers</span>
+                <span class="stat-value" id="totalTransfers">$0.00</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Net Change</span>
+                <span class="stat-value" id="netChange">$0.00</span>
+            </div>
+        </div>
+        
+        <div class="transactions-container" id="fullTransactionsList">
+            <!-- Transactions will be loaded here -->
+            <div class="loading-history">Loading transactions...</div>
+        </div>
+        
+        <div class="history-pagination" id="historyPagination">
+            <!-- Pagination will be added here -->
+        </div>
+    </div>
+</div>
     <!-- Withdraw Modal -->
     <div id="withdrawModal" class="modal">
         <div class="modal-content">

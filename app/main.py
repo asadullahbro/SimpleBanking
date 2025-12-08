@@ -464,9 +464,6 @@ async def setup_2fa(
     conn.close()
     
     return {"message": "2FA enabled successfully"}
-
-    
-    return {"message": "2FA verified successfully"}
 @app.post("/disable_2fa")
 async def disable_2fa(
     otp: str = Form(...),  # Require OTP to disable
@@ -590,7 +587,7 @@ async def make_withdrawal(
         transaction = {
             "user_id": current_user["username"],
             "type": "withdrawal",
-            "amount": amount,
+            "amount": -amount,
             "description": f"Withdrawal: ${amount:.2f}",
             "balance_after": new_balance,
             "related_account": current_user["account_number"]
@@ -618,17 +615,21 @@ async def transfer_money(
     amount: float = Form(...),
     current_user: dict = Depends(get_current_user)
 ):
+    """
+    Transfers money between user accounts with full transaction safety (ACID compliance).
+    """
+    
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be positive")
     
-    if current_user["balance"] < amount:
-        raise HTTPException(status_code=400, detail="Insufficient funds")
-    
+    if current_user["account_number"] == to_account_number:
+        raise HTTPException(status_code=400, detail="Cannot transfer to yourself")
+
     conn = get_db_connection()
     cursor = conn.cursor()
     
     try:
-        # Find recipient
+        # 1. Find recipient first
         cursor.execute(
             "SELECT * FROM users WHERE account_number = ?",
             (to_account_number,)
@@ -638,32 +639,50 @@ async def transfer_money(
             raise HTTPException(status_code=404, detail="Recipient account not found")
         recipient = dict(recipient_row)
         
-        if current_user["account_number"] == to_account_number:
-            raise HTTPException(status_code=400, detail="Cannot transfer to yourself")
-        
-        # Update balances
-        sender_new_balance = current_user["balance"] - amount
-        recipient_new_balance = recipient["balance"] + amount
+        # 2. Update SENDER's balance ATOMICALLY and check for sufficient funds
+        # This single query prevents race conditions by locking the row and checking the balance.
         cursor.execute(
-            "UPDATE users SET balance = ? WHERE username = ?",
-            (sender_new_balance, current_user["username"])
-        )
-        cursor.execute(
-            "UPDATE users SET balance = ? WHERE username = ?",
-            (recipient_new_balance, recipient["username"])
+            "UPDATE users SET balance = balance - ? WHERE username = ? AND balance >= ?",
+            (amount, current_user["username"], amount)
         )
         
-        # Log transactions using same connection
+        if cursor.rowcount == 0:
+            # If 0 rows were updated, the WHERE balance >= ? condition failed (Insufficient funds)
+            raise HTTPException(status_code=400, detail="Insufficient funds")
+
+        # 3. Update RECIPIENT's balance ATOMICALLY (always an increase)
+        cursor.execute(
+            "UPDATE users SET balance = balance + ? WHERE username = ?",
+            (amount, recipient["username"])
+        )
+
+        # 4. Re-fetch current balances for transaction logging and response
+        cursor.execute(
+            "SELECT balance FROM users WHERE username = ?",
+            (current_user["username"],)
+        )
+        sender_new_balance = cursor.fetchone()[0]
+        
+        cursor.execute(
+            "SELECT balance FROM users WHERE username = ?",
+            (recipient["username"],)
+        )
+        recipient_new_balance = cursor.fetchone()[0]
+        
+        # 5. Log transactions
+        
+        # SENDER LOG: Amount is logged as NEGATIVE for correct frontend display
         sender_tx = {
             "user_id": current_user["username"],
             "type": "transfer_sent",
-            "amount": amount,
+            "amount": -amount, # <-- FIX: Logs a negative amount
             "description": f"Transfer to {to_account_number}",
             "balance_after": sender_new_balance,
             "related_account": to_account_number
         }
         save_transaction(sender_tx, conn)
         
+        # RECIPIENT LOG: Amount is logged as POSITIVE
         recipient_tx = {
             "user_id": recipient["username"],
             "type": "transfer_received",
@@ -674,7 +693,7 @@ async def transfer_money(
         }
         save_transaction(recipient_tx, conn)
         
-        # Commit everything together
+        # 6. Commit everything together
         conn.commit()
         
     except HTTPException:
@@ -682,7 +701,8 @@ async def transfer_money(
         raise
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Transfer failed: {str(e)}")
+        # Log the detailed exception e for server-side debugging
+        raise HTTPException(status_code=500, detail=f"Transfer failed unexpectedly.")
     finally:
         conn.close()
     
@@ -690,7 +710,6 @@ async def transfer_money(
         "message": f"Transferred ${amount:.2f} to account {to_account_number}",
         "new_balance": sender_new_balance
     }
-
 
 @app.get("/transactions")
 async def get_transactions(current_user: dict = Depends(get_current_user)):
@@ -760,6 +779,37 @@ async def health_check():
     except Exception as e:
         return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
+@app.post("/change_password")
+async def change_password(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    # Verify current password
+    if not pwd_context.verify(current_password, current_user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Verify new password complexity
+    if not verify_password_complexity(new_password):
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 8 characters with uppercase, lowercase, number, and special character"
+        )
+    if current_password == new_password:
+        raise HTTPException(
+            status_code=400,
+            detail="New password must be different from current password"
+        )
+    hashed_new = pwd_context.hash(new_password)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET hashed_password = ? WHERE username = ?",
+        (hashed_new, current_user["username"])
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "Password updated successfully"}
 
 if __name__ == "__main__":
     import uvicorn
