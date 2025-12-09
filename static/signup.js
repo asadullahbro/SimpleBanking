@@ -29,6 +29,7 @@ form.addEventListener('submit', async (event) => {
     const form = new FormData();
     form.append('username', username);
     form.append('password', password);
+    form.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone);
     try {
         const res = await fetch('http://127.0.0.1:8000/signup', {
             method: 'POST',

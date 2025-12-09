@@ -49,8 +49,9 @@ loginForm.addEventListener('submit', async function(event) {
             // No 2FA required - login complete
             const data = await res.json();
             await completeLogin(data.access_token);
-        } else {
-            alert('Login failed. Please check your credentials.');
+        } else if (!res.ok) {
+            const data = await res.json();
+            alert('Login failed: ' + (data.detail || 'Invalid credentials'));
         }
     } catch (error) {
         console.error('Error during login:', error);

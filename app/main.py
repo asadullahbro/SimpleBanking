@@ -8,21 +8,21 @@ from datetime import datetime, timedelta
 import uuid
 import os
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 import sqlite3
 import pyotp
-import qrcode
-import base64
-from io import BytesIO
+# from zoneinfo import ZoneInfo # REMOVED
 
 # Configuration
 DB_FILE = "simple_banking.db"
 SECRET_KEY = os.getenv("SECRET_KEY", "if_you_use_a_real_secret_key_your_app_will_be_more_secure")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
+FAILED_ATTEMPTS = {}
+LOCKOUT_TIME = 300 
+MAX_ATTEMPTS = 5
 # Security setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -63,7 +63,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Users table
+    # Users table - 'timezone' column REMOVED
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
@@ -73,6 +73,7 @@ def init_db():
         totp_secret TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_login DATETIME
+        -- timezone TEXT DEFAULT 'UTC' REMOVED
     )
     ''')
     
@@ -90,6 +91,16 @@ def init_db():
         FOREIGN KEY(user_id) REFERENCES users(username) ON DELETE CASCADE
     )
     ''')
+    cursor.execute('''
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    ip TEXT,
+    success INTEGER NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+''')
+
     
     # Indexes for performance
     cursor.execute('''
@@ -99,10 +110,19 @@ def init_db():
     CREATE INDEX IF NOT EXISTS idx_transactions_timestamp ON transactions(timestamp)
     ''')
     
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN locked_until DATETIME")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
-
+# def to_user_timezone(dt_str: str, tz_str: str): # ENTIRE FUNCTION REMOVED
+#     """Convert UTC datetime string from DB to user's timezone"""
+#     if not dt_str:
+#         return None
+#     dt = datetime.fromisoformat(dt_str)  # assumes DB stores ISO or ISO-like format
+#     return dt.astimezone(ZoneInfo(tz_str)).isoformat()
 def verify_password_complexity(password: str) -> bool:
     """Verify password meets complexity requirements"""
     if len(password) < 8:
@@ -117,7 +137,71 @@ def verify_password_complexity(password: str) -> bool:
         return False
     return True
 
+def record_login_attempt(username: str, ip: str, success: bool, conn=None):
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO login_attempts (username, ip, success) VALUES (?, ?, ?)",
+        (username, ip, 1 if success else 0)
+    )
+    if close_conn:
+        conn.commit()
+        conn.close()
+def count_failed_attempts(username: str, minutes: int = 15, ip: str = None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    since = (datetime.utcnow() - timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
+    if ip:
+        cursor.execute(
+            "SELECT COUNT(*) FROM login_attempts WHERE username = ? AND ip = ? AND success = 0 AND timestamp >= ?",
+            (username, ip, since)
+        )
+    else:
+        cursor.execute(
+            "SELECT COUNT(*) FROM login_attempts WHERE username = ? AND success = 0 AND timestamp >= ?",
+            (username, since)
+        )
+    cnt = cursor.fetchone()[0]
+    conn.close()
+    return cnt
+def lock_user(username: str, minutes: int):
+    locked_until = (datetime.utcnow() + timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET locked_until = ? WHERE username = ?",
+        (locked_until, username)
+    )
+    conn.commit()
+    conn.close()
+def is_user_locked(user_row):
+    locked = user_row.get("locked_until")
+    if not locked:
+        return False, None
+    try:
+        locked_dt = datetime.strptime(locked, "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return False, None
+    if locked_dt > datetime.utcnow():
+        return True, locked_dt
+    # expired, clear it
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET locked_until = NULL WHERE username = ?", (user_row["username"],))
+    conn.commit()
+    conn.close()
+    return False, None
 
+# clear old failed attempts after successful login (optional)
+def clear_failed_attempts(username: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM login_attempts WHERE username = ? AND success = 0", (username,))
+    conn.commit()
+    conn.close()
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
     to_encode = data.copy()
@@ -267,10 +351,11 @@ async def signup(username: str = Form(...), password: str = Form(...)):
     
     conn = get_db_connection()
     cursor = conn.cursor()
+    # 'timezone' column REMOVED from INSERT statement
     cursor.execute('''
         INSERT INTO users (username, hashed_password, account_number, balance)
         VALUES (?, ?, ?, ?)
-    ''', (username, hashed_password, account_number, 0.0))
+    ''', (username, hashed_password, account_number, 0.0)) # 'timezone' variable REMOVED
     
     conn.commit()
     conn.close()
@@ -279,16 +364,42 @@ async def signup(username: str = Form(...), password: str = Form(...)):
 
 
 @app.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), request: Request = None):
+    client_ip = request.client.host if request else "unknown"
     user = get_user_by_username(form_data.username)
-
+    
     # Wrong credentials
+    if user:
+        locked, until = is_user_locked(user)
+        if locked:
+            # Timezone logic REMOVED. Displaying UTC time.
+            raise HTTPException(
+                status_code=403,
+                detail=f"Account locked until {until.strftime('%Y-%m-%d %H:%M:%S')} UTC due to multiple failed login attempts"
+            )
+            
     if not user or not pwd_context.verify(form_data.password, user["hashed_password"]):
+        record_login_attempt(form_data.username, client_ip, False)
+                # evaluate thresholds
+        fails_15m = count_failed_attempts(form_data.username, minutes=15)
+        fails_30m = count_failed_attempts(form_data.username, minutes=30)
+        fails_24h = count_failed_attempts(form_data.username, minutes=60*24)
+
+        # progressive locking
+        if fails_15m >= 5 and fails_15m < 10:
+            lock_user(form_data.username, minutes=5)  # short lock
+        elif fails_30m >= 10 and fails_30m < 15:
+            lock_user(form_data.username, minutes=60)  # 1 hour
+        elif fails_24h >= 15:
+            lock_user(form_data.username, minutes=1440)  # 24 hours
+
         raise HTTPException(
             status_code=401,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    record_login_attempt(form_data.username, client_ip, True)
+    clear_failed_attempts(form_data.username)
 
     # If user has 2FA enabled, block normal login
     if user.get("totp_secret"):
@@ -324,35 +435,59 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     
 
 @app.post("/token_2fa")
-async def login_with_2fa(
+async def login_2fa(
     form_data: OAuth2PasswordRequestForm = Depends(),
+    request: Request = None,
     otp: Optional[str] = Form(None)
 ):
-    """Login endpoint with 2FA support"""
+    client_ip = request.client.host
+
     user = get_user_by_username(form_data.username)
-    
-    if not user or not pwd_context.verify(form_data.password, user["hashed_password"]):
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # check if locked
+    locked, until = is_user_locked(user)
+    if locked:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=403,
+            detail=f"Account locked until {until.strftime('%Y-%m-%d %H:%M:%S')} UTC"
         )
-    
-    # Check if 2FA is enabled
+
+    # verify NEWLY typed password (if your 2FA flow requires password again)
+    if not pwd_context.verify(form_data.password, user["hashed_password"]):
+        record_login_attempt(form_data.username, client_ip, False)
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # now verify OTP
     if user.get("totp_secret"):
         if not otp:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="2FA code required"
             )
-        
-        totp = pyotp.TOTP(user["totp_secret"])
-        if not totp.verify(otp):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid 2FA code"
-            )
-    
+    totp = pyotp.TOTP(user["totp_secret"])
+    if not totp.verify(otp):
+        record_login_attempt(form_data.username, client_ip, False)
+
+        # thresholds
+        fails_15m = count_failed_attempts(form_data.username, 15)
+        fails_30m = count_failed_attempts(form_data.username, 30)
+        fails_24h = count_failed_attempts(form_data.username, 60*24)
+
+        if fails_15m >= 5 and fails_15m < 10:
+            lock_user(form_data.username, 5)
+        elif fails_30m >= 10 and fails_30m < 15:
+            lock_user(form_data.username, 60)
+        elif fails_24h >= 15:
+            lock_user(form_data.username, 1440)
+
+        raise HTTPException(status_code=401, detail="Invalid 2FA code")
+
+    # OTP success
+    record_login_attempt(form_data.username, client_ip, True)
+    clear_failed_attempts(form_data.username)
+
     # Update last login time
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -413,12 +548,10 @@ async def verify_2fa(
     current_user: dict = Depends(get_current_user)
 ):
     """Verify OTP and enable 2FA"""
+    # 
     # Get the secret from frontend (should be stored in session or passed)
     # Since we're not storing it in DB yet, the frontend needs to send it back
     # OR we can store it temporarily in session
-    
-    # For simplicity, let's assume frontend sends both secret and OTP
-    # But actually, we need to store the secret temporarily
     
     # Better approach: Store secret in user's session/temp storage
     # Since we're using JWT, we need another way
@@ -576,6 +709,7 @@ async def make_withdrawal(
     try:
         new_balance = current_user["balance"] - amount
         
+        
         # Update balance
         cursor = conn.cursor()
         cursor.execute(
@@ -713,33 +847,46 @@ async def transfer_money(
 
 @app.get("/transactions")
 async def get_transactions(current_user: dict = Depends(get_current_user)):
-    """Get user's transaction history"""
+    # Timezone variable REMOVED: tz = current_user.get("timezone", "UTC")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
         SELECT * FROM transactions 
-        WHERE user_id = ? 
+        WHERE user_id = ?
         ORDER BY timestamp DESC
         LIMIT 100
     ''', (current_user["username"],))
     
     transactions = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    
+
+    # Timezone conversion loop REMOVED
+    # for tx in transactions:
+    #     tx["timestamp"] = to_user_timezone(tx.get("timestamp"), tz)
+
     return {"transactions": transactions}
 
 
 @app.get("/users/me")
 async def read_users_me(current_user: dict = Depends(get_current_user)):
     """Get current user information"""
+    # Timezone variable REMOVED: tz = current_user.get("timezone", "UTC")
     return {
         "username": current_user["username"],
         "account_number": current_user["account_number"],
         "balance": current_user["balance"],
         "has_2fa": bool(current_user.get("totp_secret")),
+        # to_user_timezone calls REMOVED. Raw UTC string returned.
         "created_at": current_user.get("created_at"),
         "last_login": current_user.get("last_login")
+
     }
+# ENTIRE /users/me/timezone ENDPOINT REMOVED
+# @app.post("/users/me/timezone")
+# async def update_timezone(...):
+#     """Update user's preferred timezone."""
+#     ...
+#     return {"message": f"Timezone updated to {new_timezone}"}
 
 
 @app.get("/users/{account_number}")
@@ -813,4 +960,4 @@ async def change_password(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
