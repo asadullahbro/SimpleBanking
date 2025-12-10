@@ -48,28 +48,27 @@ A modern, secure banking web app built with **FastAPI** + **Vanilla JavaScript**
 
 simplebanking/
 ├── app/
-│   ├── main.py                # FastAPI application (ALL CODE IN ONE FILE)
-│   ├── simple_banking.db      # SQLite database (auto-generated)
-│   └── static/
-│       ├── login.css          # Styling for login/signup
-│       ├── login.js           # Login functionality
-│       ├── signup.js          # Signup functionality
-│       ├── index.css          # User dashboard styling
-│       ├── index.js           # User dashboard functionality
-│       ├── admin-panel.css    # Admin panel styling
-│       └── admin-panel.js     # Admin panel JavaScript
-        ├── admin-login.css    # Admin login styling
-        └── admin-login.js     # Admin login JavaScript
+│   ├── main.py
+│   ├── simple_banking.db
+│   ├── static/
+│   │   ├── login.css
+│   │   ├── login.js
+│   │   ├── signup.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   ├── admin-panel.css
+│   │   ├── admin-panel.js
+│   │   ├── admin-login.css
+│   │   └── admin-login.js
 │   └── templates/
-│       ├── index.html         # Home page
-│       ├── login.html         # User login page
-│       ├── signup.html        # User signup page
-│       ├── index.html         # User dashboard
-│       ├── admin-login.html   # Admin login page
-│       └── admin-panel.html   # Admin dashboard
-├── requirements.txt           # Python dependencies
-├── README.md                  # This file
-└── .env.example               # Environment variables template
+│       ├── index.html
+│       ├── login.html
+│       ├── signup.html
+│       ├── admin-login.html
+│       └── admin-panel.html
+├── requirements.txt
+├── README.md
+└── .env.example
 
 ### 🔒 Security Features
 - **Password Hashing:** bcrypt for secure password storage
@@ -94,6 +93,7 @@ simplebanking/
 
 ### 🛠️ API Endpoints
 **User Endpoints**
+
 `GET /` - Home page
 
 `GET /login` - Login page
@@ -131,6 +131,7 @@ simplebanking/
 `GET /health` - Health check endpoint
 
 **Admin Endpoints**
+
 `GET /admin/login` - Admin login page
 
 `POST /admin/login` - Admin authentication
