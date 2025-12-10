@@ -49,6 +49,7 @@ A modern, secure banking web app built with **FastAPI** + **Vanilla JavaScript**
 simplebanking/
 ├── app/
 │   ├── main.py
+|   ├── requirements.txt
 │   ├── simple_banking.db
 │   ├── static/
 │   │   ├── login.css
@@ -67,7 +68,6 @@ simplebanking/
 │       ├── signup.html
 │       ├── admin-login.html
 │       └── admin-panel.html
-├── requirements.txt
 ├── README.md
 └── .env.example
 ```
