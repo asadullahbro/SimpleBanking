@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/login.css">
+    <link rel="stylesheet" href="/static/admin-login.css">
+    <title>SimpleBanking - Admin Login</title>
+</head>
+<body>
+    <div class="container">
+        <form id="adminLoginForm">
+            <div class="admin-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+            
+            <h2>Admin Portal</h2>
+            
+            <div class="admin-warning">
+                ⚠️ Restricted Access - Authorized Personnel Only
+            </div>
+            
+            <div id="adminLoginError" class="alert alert-danger"></div>
+            
+            <div class="form-group">
+                <label for="adminUsername">Admin ID:</label>
+                <input type="text" id="adminUsername" name="username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="adminPassword">Password:</label>
+                <input type="password" id="adminPassword" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="admin2FA">2FA Code (if enabled):</label>
+                <input type="text" id="admin2FA" name="otp" placeholder="6-digit code" maxlength="6" autocomplete="off">
+            </div>
+            
+            <button type="submit" id="adminLoginBtn">Access Admin Panel</button>
+            
+            <div class="signup-link">
+                <p><a href="/login">← Back to User Login</a></p>
+            </div>
+        </form>
+    </div>
+
+    <script src="/static/admin-login.js"></script>
+</body>
+</html>

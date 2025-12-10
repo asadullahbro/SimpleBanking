@@ -43,7 +43,7 @@ loginForm.addEventListener('submit', async function(event) {
                 twoFAModal.style.display = 'block';
                 twoFACodeInput.focus();
             } else {
-                alert('Login failed: ' + (data.detail || 'Invalid credentials'));
+                alert('Login failed: ' + (data.detail));
             }
         } else if (res.ok) {
             // No 2FA required - login complete

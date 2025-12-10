@@ -1270,7 +1270,7 @@ function convertToCSV(transactions) {
             }
         }
 
-        // Transaction history
+  
         // Transaction history
 async function loadTransactionHistory() {
     try {
