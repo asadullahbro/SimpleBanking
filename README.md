@@ -46,7 +46,6 @@ A modern, secure banking web app built with **FastAPI** + **Vanilla JavaScript**
 
 ## 🧩 Project Structure
 ```
-text
 simplebanking/
 ├── app/
 │   ├── main.py
