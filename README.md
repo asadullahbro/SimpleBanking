@@ -45,7 +45,8 @@ A modern, secure banking web app built with **FastAPI** + **Vanilla JavaScript**
 ---
 
 ## 🧩 Project Structure
-
+```
+text
 simplebanking/
 ├── app/
 │   ├── main.py
@@ -69,7 +70,7 @@ simplebanking/
 ├── requirements.txt
 ├── README.md
 └── .env.example
-
+```
 ### 🔒 Security Features
 - **Password Hashing:** bcrypt for secure password storage
 
