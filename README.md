@@ -184,13 +184,11 @@ simplebanking/
    lsof -ti:8000 | xargs kill -9
 2. Database errors
    ```
-   bash
    # Delete and recreate database
    rm simple_banking.db
    python main.py
 3. Missing dependencies
    ```
-   bash
    pip install -r requirements.txt --upgrade
 4. Environment variables not loading
    ```bash
