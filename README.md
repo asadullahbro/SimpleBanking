@@ -54,6 +54,7 @@ simplebanking/
 │   │   ├── login.css
 │   │   ├── login.js
 │   │   ├── signup.js
+|   |   ├── signup.css
 │   │   ├── index.css
 │   │   ├── index.js
 │   │   ├── admin-panel.css
