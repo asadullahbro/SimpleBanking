@@ -200,7 +200,7 @@ This project stands on the shoulders of incredible open-source projects and tool
 
 ### 🐍 **Core Technologies**
 - **[FastAPI](https://fastapi.tiangolo.com/)** - For the lightning-fast, modern web framework that made this project possible
-- **[Uvicorn](https://www.uvicorn.org/)** - For the ASGI server that powers our async Python backend
+- **[Uvicorn](https://www.uvicorn.dev/)** - For the ASGI server that powers our async Python backend
 - **[SQLite](https://sqlite.org/)** - For the lightweight, file-based database that keeps our data persistent
 - **[Python](https://www.python.org/)** - For being the versatile language that ties everything together
 ### 🔒 **Security & Authentication**
